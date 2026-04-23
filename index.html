@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>My Retro Desktop</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none; /* Prevents text selection while dragging */
+}
+
+body {
+  background: #008080; /* Classic Windows 95 teal */
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Desktop Area - can drag icons */
+.desktop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 40px; /* Space for taskbar */
+  overflow: auto;
+  padding: 20px;
+}
+
+/* Desktop Icons Container - uses grid on mobile, absolute on desktop */
+.icons-container {
+  position: relative;
+  min-height: 100%;
+}
+
+/* Desktop Icon - draggable on desktop */
+.desktop-icon {
+  position: relative;
+  width: 90px;
+  text-align: center;
+  cursor: pointer;
+  padding: 8px 4px;
+  color: white;
+  font-size: 11px;
+  transition: all 0.05s ease;
+  display: inline-block;
+  vertical-align: top;
+}
+
+.desktop-icon.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+}
+
+.desktop-icon.drag-over {
+  background: rgba(0,0,128,0.3);
+  outline: 2px dotted white;
+}
+
+.desktop-icon:hover {
+  background: #000080;
+  outline: 1px dotted #ffffff;
+  outline-offset: -1px;
+}
+
+.desktop-icon:active {
+  background: #c0c0c0;
+  color: #000;
+}
+
+.desktop-icon .icon-img {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 8px;
+  pointer-events: none;
+}
+
+.desktop-icon img {
+  width: 48px;
+  height: 48px;
+  display: block;
+  margin: 0 auto 8px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.icon-label {
+  word-break: break-word;
+  pointer-events: none;
+}
+
+.delete-icon-btn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #c0c0c0;
+  border: 1px solid #000;
+  border-radius: 10px;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  cursor: pointer;
+  color: black;
+  display: none;
+  font-weight: bold;
+  z-index: 10;
+}
+
+.desktop-icon:hover .delete-icon-btn {
+  display: block;
+}
+
+.delete-icon-btn:hover {
+  background: #ff0000;
+  color: white;
+}
+
+/* Taskbar */
+.taskbar {
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  z-index: 1000;
+}
+
+.start-button {
+  background: #c0c0c0;
+  border: 2px solid #ffffff;
+  border-right-color: #808080;
+  border-bottom-color: #808080;
+  padding: 4px 12px;
+  font-weight: bold;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.start-button:active {
+  border: 2px solid #808080;
+  border-right-color: #ffffff;
+  border-bottom-color: #ffffff;
+}
+
+.start-menu {
+  display: none;
+  position: fixed;
+  bottom: 40px;
+  left: 8px;
+  background: #c0c0c0;
+  border: 2px solid #ffffff;
+  border-right-color: #000000;
+  border-bottom-color: #000000;
+  min-width: 200px;
+  z-index: 1001;
+  padding: 4px 0;
+}
+
+.start-menu.show {
+  display: block;
+}
+
+.start-menu-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.start-menu-item:hover {
+  background: #000080;
+  color: white;
+}
+
+.start-menu-divider {
+  height: 1px;
+  background: #808080;
+  margin: 4px 0;
+}
+
+.taskbar-time {
+  margin-left: auto;
+  background: #c0c0c0;
+  border: 1px solid #808080;
+  padding: 2px 8px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  font-size: 11px;
+}
+
+/* Add Icon Popup */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #c0c0c0;
+  border: 2px solid #fff;
+  border-right-color: #000;
+  border-bottom-color: #000;
+  width: 350px;
+  max-width: 90%;
+  padding: 0;
+}
+
+.modal-title-bar {
+  background: #000080;
+  color: white;
+  padding: 6px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move;
+}
+
+.modal-body {
+  padding: 15px;
+}
+
+.modal-body input, .modal-body textarea {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 5px;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  border: 1px solid #808080;
+}
+
+.retro-button {
+  background: #c0c0c0;
+  border: 2px solid #fff;
+  border-right-color: #000;
+  border-bottom-color: #000;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
+  margin-top: 5px;
+}
+
+.retro-button:active {
+  border: 2px solid #000;
+  border-right-color: #fff;
+  border-bottom-color: #fff;
+}
+
+/* Sort Dropdown (in start menu) */
+.sort-option {
+  padding-left: 20px;
+}
+
+/* Mobile: 3 icons per row, no drag */
+@media (max-width: 768px) {
+  .icons-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px 10px;
+  }
+  
+  .desktop-icon {
+    position: static !important;
+    width: auto;
+    margin: 0 auto;
+  }
+  
+  .desktop-icon:hover .delete-icon-btn {
+    display: block;
+  }
+  
+  .delete-icon-btn {
+    display: none;
+  }
+  
+  .desktop {
+    bottom: 50px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Desktop Area -->
+<div class="desktop" id="desktop">
+  <div class="icons-container" id="iconsContainer">
+    <!-- Icons will be loaded here -->
+  </div>
+</div>
+
+<!-- Taskbar -->
+<div class="taskbar">
+  <div class="start-button" id="startButton">
+    <span>🪟</span> Start
+  </div>
+  <div class="taskbar-time" id="clock"></div>
+</div>
+
+<!-- Start Menu -->
+<div class="start-menu" id="startMenu">
+  <div class="start-menu-item" id="addIconBtn">
+    📌 Add New Icon
+  </div>
+  <div class="start-menu-divider"></div>
+  <div class="start-menu-item" id="sortByNameBtn">
+    🔤 Sort by Name
+  </div>
+  <div class="start-menu-item" id="sortByDateBtn">
+    📅 Sort by Date Added
+  </div>
+  <div class="start-menu-divider"></div>
+  <div class="start-menu-item" id="resetIconsBtn">
+    🔄 Reset to Default Icons
+  </div>
+</div>
+
+<!-- Add/Edit Icon Modal -->
+<div class="modal" id="iconModal">
+  <div class="modal-content" id="modalContent">
+    <div class="modal-title-bar" id="modalTitleBar">
+      Add New Icon
+      <span style="cursor:pointer" id="closeModal">✗</span>
+    </div>
+    <div class="modal-body">
+      <input type="text" id="iconLabel" placeholder="Icon name (e.g., Bucket List)">
+      <input type="text" id="iconLink" placeholder="Link URL (e.g., bucketlist.html)">
+      <input type="text" id="iconImageUrl" placeholder="Image URL (emoji or image link)">
+      <p style="font-size: 10px; color: #555;">Tip: Use 📝 for emoji, or paste an image URL like https://example.com/icon.png</p>
+      <button id="saveIconBtn" class="retro-button">Save Icon</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Icon Data ---
+let icons = [];
+let dragEnabled = true;
+let isDragging = false;
+let draggedItem = null;
+let dragOffsetX = 0, dragOffsetY = 0;
+
+// Load from localStorage
+function loadIcons() {
+  const saved = localStorage.getItem('desktopIcons');
+  if (saved) {
+    icons = JSON.parse(saved);
+  } else {
+    // Default icons
+    icons = [
+      { id: Date.now(), label: "Bucket List", link: "bucketlist.html", image: "📝", x: 30, y: 30, dateAdded: Date.now() },
+      { id: Date.now() + 1, label: "Comfort Corner", link: "comfort.html", image: "🧸", x: 130, y: 30, dateAdded: Date.now() + 1 },
+      { id: Date.now() + 2, label: "Recipes", link: "recipes.html", image: "🍳", x: 230, y: 30, dateAdded: Date.now() + 2 },
+      { id: Date.now() + 3, label: "Journal", link: "journal.html", image: "📔", x: 330, y: 30, dateAdded: Date.now() + 3 }
+    ];
+  }
+  renderIcons();
+}
+
+// Save icons
+function saveIcons() {
+  localStorage.setItem('desktopIcons', JSON.stringify(icons));
+}
+
+// Render icons
+function renderIcons() {
+  const container = document.getElementById('iconsContainer');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  icons.forEach(icon => {
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'desktop-icon';
+    iconDiv.setAttribute('data-id', icon.id);
+    iconDiv.setAttribute('data-x', icon.x || 0);
+    iconDiv.setAttribute('data-y', icon.y || 0);
+    
+    // Check if image is an emoji or URL
+    const isEmoji = icon.image && (icon.image.length <= 4 || icon.image.includes('📝') || icon.image.includes('🧸') || icon.image.includes('🍳') || icon.image.includes('📔'));
+    
+    iconDiv.innerHTML = `
+      <div class="delete-icon-btn" data-id="${icon.id}">✗</div>
+      ${isEmoji ? `<div class="icon-img">${icon.image || '📄'}</div>` : `<img src="${icon.image}" alt="${icon.label}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=icon-img>📄</div>'">`}
+      <div class="icon-label">${escapeHtml(icon.label)}</div>
+    `;
+    
+    // Position on desktop (only if drag is enabled and not mobile)
+    if (dragEnabled && window.innerWidth > 768) {
+      iconDiv.style.position = 'absolute';
+      iconDiv.style.left = (icon.x || 30) + 'px';
+      iconDiv.style.top = (icon.y || 30) + 'px';
+      iconDiv.style.margin = '0';
+      
+      // Make draggable
+      makeDraggable(iconDiv, icon.id);
+    }
+    
+    container.appendChild(iconDiv);
+  });
+  
+  // Add click handlers for icons (navigate to link)
+  document.querySelectorAll('.desktop-icon').forEach(iconEl => {
+    iconEl.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-icon-btn')) return;
+      const id = parseInt(iconEl.getAttribute('data-id'));
+      const icon = icons.find(i => i.id === id);
+      if (icon && icon.link) {
+        window.location.href = icon.link;
+      }
+    });
+    
+    // Delete button handler
+    const deleteBtn = iconEl.querySelector('.delete-icon-btn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = parseInt(deleteBtn.getAttribute('data-id'));
+        deleteIcon(id);
+      });
+    }
+  });
+}
+
+// Make icon draggable (desktop only)
+function makeDraggable(element, iconId) {
+  let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  
+  element.onmousedown = dragMouseDown;
+  
+  function dragMouseDown(e) {
+    if (e.target.classList.contains('delete-icon-btn')) return;
+    e = e || window.event;
+    e.preventDefault();
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    document.onmouseup = closeDragElement;
+    document.onmousemove = elementDrag;
+    element.style.zIndex = '1000';
+  }
+  
+  function elementDrag(e) {
+    e = e || window.event;
+    e.preventDefault();
+    pos1 = pos3 - e.clientX;
+    pos2 = pos4 - e.clientY;
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    let newTop = element.offsetTop - pos2;
+    let newLeft = element.offsetLeft - pos1;
+    
+    // Keep within bounds
+    newTop = Math.max(0, Math.min(newTop, window.innerHeight - 100));
+    newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - 100));
+    
+    element.style.top = newTop + "px";
+    element.style.left = newLeft + "px";
+    
+    // Update icon position in data
+    const icon = icons.find(i => i.id === iconId);
+    if (icon) {
+      icon.x = newLeft;
+      icon.y = newTop;
+      saveIcons();
+    }
+  }
+  
+  function closeDragElement() {
+    document.onmouseup = null;
+    document.onmousemove = null;
+    element.style.zIndex = '';
+  }
+}
+
+// Delete icon
+function deleteIcon(id) {
+  if (confirm('Delete this icon?')) {
+    icons = icons.filter(i => i.id !== id);
+    saveIcons();
+    renderIcons();
+  }
+}
+
+// Add new icon
+function addIcon() {
+  document.getElementById('iconLabel').value = '';
+  document.getElementById('iconLink').value = '';
+  document.getElementById('iconImageUrl').value = '';
+  document.getElementById('iconModal').style.display = 'flex';
+}
+
+// Save new icon
+function saveNewIcon() {
+  const label = document.getElementById('iconLabel').value.trim();
+  const link = document.getElementById('iconLink').value.trim();
+  let image = document.getElementById('iconImageUrl').value.trim();
+  
+  if (!label) {
+    alert('Please enter an icon name');
+    return;
+  }
+  
+  if (!image) {
+    image = '📄';
+  }
+  
+  const newIcon = {
+    id: Date.now(),
+    label: label,
+    link: link || '#',
+    image: image,
+    x: 30 + (icons.length * 20),
+    y: 30 + (icons.length * 20),
+    dateAdded: Date.now()
+  };
+  
+  icons.push(newIcon);
+  saveIcons();
+  renderIcons();
+  document.getElementById('iconModal').style.display = 'none';
+}
+
+// Sort icons
+function sortByName() {
+  icons.sort((a, b) => a.label.localeCompare(b.label));
+  saveIcons();
+  renderIcons();
+}
+
+function sortByDate() {
+  icons.sort((a, b) => a.dateAdded - b.dateAdded);
+  saveIcons();
+  renderIcons();
+}
+
+function resetIcons() {
+  if (confirm('Reset to default icons? This will remove all custom icons.')) {
+    localStorage.removeItem('desktopIcons');
+    loadIcons();
+  }
+}
+
+// Escape HTML
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const clock = document.getElementById('clock');
+  if (clock) clock.innerText = timeString;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Start Menu toggle
+const startButton = document.getElementById('startButton');
+const startMenu = document.getElementById('startMenu');
+
+startButton.addEventListener('click', (e) => {
+  e.stopPropagation();
+  startMenu.classList.toggle('show');
+});
+
+document.addEventListener('click', (e) => {
+  if (!startButton.contains(e.target) && !startMenu.contains(e.target)) {
+    startMenu.classList.remove('show');
+  }
+});
+
+// Modal handlers
+document.getElementById('addIconBtn').addEventListener('click', () => {
+  startMenu.classList.remove('show');
+  addIcon();
+});
+
+document.getElementById('sortByNameBtn').addEventListener('click', () => {
+  startMenu.classList.remove('show');
+  sortByName();
+});
+
+document.getElementById('sortByDateBtn').addEventListener('click', () => {
+  startMenu.classList.remove('show');
+  sortByDate();
+});
+
+document.getElementById('resetIconsBtn').addEventListener('click', () => {
+  startMenu.classList.remove('show');
+  resetIcons();
+});
+
+document.getElementById('saveIconBtn').addEventListener('click', saveNewIcon);
+document.getElementById('closeModal').addEventListener('click', () => {
+  document.getElementById('iconModal').style.display = 'none';
+});
+
+// Close modal when clicking outside
+document.getElementById('iconModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('iconModal')) {
+    document.getElementById('iconModal').style.display = 'none';
+  }
+});
+
+// Make modal draggable
+function makeModalDraggable() {
+  const modal = document.getElementById('modalContent');
+  const header = document.getElementById('modalTitleBar');
+  let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  
+  header.onmousedown = dragMouseDown;
+  
+  function dragMouseDown(e) {
+    e = e || window.event;
+    e.preventDefault();
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    document.onmouseup = closeDragElement;
+    document.onmousemove = elementDrag;
+  }
+  
+  function elementDrag(e) {
+    e = e || window.event;
+    e.preventDefault();
+    pos1 = pos3 - e.clientX;
+    pos2 = pos4 - e.clientY;
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    modal.style.top = (modal.offsetTop - pos2) + "px";
+    modal.style.left = (modal.offsetLeft - pos1) + "px";
+    modal.style.position = 'absolute';
+  }
+  
+  function closeDragElement() {
+    document.onmouseup = null;
+    document.onmousemove = null;
+  }
+}
+
+makeModalDraggable();
+
+// Check if mobile to disable drag
+if (window.innerWidth <= 768) {
+  dragEnabled = false;
+}
+
+// Initialize
+loadIcons();
+
+// Handle window resize for mobile/desktop switch
+window.addEventListener('resize', () => {
+  dragEnabled = window.innerWidth > 768;
+  renderIcons();
+});
+</script>
+
+</body>
+</html>
