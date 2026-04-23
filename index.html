@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body { font-family: "MS Sans Serif", Tahoma, sans-serif; overflow: hidden; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #008080; }
+        body { font-family: "MS Sans Serif", Tahoma, sans-serif; overflow: hidden; position: fixed; top: 0; left: 0; right: 0; bottom: 0; transition: background-image 0.3s ease; }
         .desktop { position: absolute; top: 0; left: 0; right: 0; bottom: 40px; overflow: auto; padding: 20px; z-index: 1; }
         .icons-container { position: relative; min-height: 100%; }
         
@@ -18,8 +18,8 @@
             vertical-align: top; background: transparent; border-radius: 2px;
         }
         .desktop-icon:hover, .folder-icon:hover { background: rgba(0,0,128,0.7); outline: 1px dotted white; }
-        .desktop-icon.drag-over { background: rgba(0,128,0,0.5); outline: 2px solid lime; }
         .desktop-icon .icon-img, .folder-icon .icon-img { font-size: 48px; display: block; margin-bottom: 8px; pointer-events: none; }
+        .desktop-icon img, .folder-icon img { width: 48px; height: 48px; display: block; margin: 0 auto 8px; pointer-events: none; }
         .icon-label { word-break: break-word; pointer-events: none; text-shadow: 1px 1px 0 #000; }
         
         /* Action buttons */
@@ -32,84 +32,58 @@
         .delete-icon-btn { right: -5px; }
         .edit-icon-btn { left: -5px; }
         .lock-icon-btn { left: 20px; background: #000080; color: white; }
-        .desktop-icon:hover .icon-action-btn, .folder-icon:hover .icon-action-btn { display: block; }
+        .desktop-icon:hover .icon-action-btn, .folder-icon:hover .icon-action-btn,
+        .desktop-icon.long-press .icon-action-btn { display: block; }
         .delete-icon-btn:hover { background: #ff0000; color: white; }
         .edit-icon-btn:hover { background: #000080; color: white; }
         
         /* Stickers */
-        .sticker {
-            position: absolute; cursor: move; z-index: 50;
-            display: inline-block; background: transparent;
-        }
-        .sticker .sticker-content { font-size: 48px; display: block; }
+        .sticker { position: absolute; cursor: move; z-index: 50; font-size: 48px; transition: transform 0.1s ease; }
+        .sticker:hover { transform: scale(1.05); filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3)); }
         .sticker .delete-sticker {
             position: absolute; top: -8px; right: -8px; width: 16px; height: 16px;
             background: #c0c0c0; border: 1px solid #000; border-radius: 10px;
             font-size: 10px; text-align: center; line-height: 14px; cursor: pointer; display: none;
-            z-index: 10;
         }
         .sticker:hover .delete-sticker { display: block; }
-        .resize-handle {
-            position: absolute; bottom: -5px; right: -5px; width: 12px; height: 12px;
-            background: #c0c0c0; border: 1px solid #000; cursor: nw-resize; display: none;
-        }
-        .sticker:hover .resize-handle { display: block; }
         
-        /* Sticky Notes Widget */
+        /* Widgets */
         .widget {
             position: absolute; background: #c0c0c0; border: 2px solid #fff;
-            border-right-color: #000; border-bottom-color: #000; min-width: 220px;
+            border-right-color: #000; border-bottom-color: #000; min-width: 200px;
             z-index: 100; box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
         }
         .widget-title-bar { background: #000080; color: white; padding: 4px 8px; display: flex; justify-content: space-between; cursor: move; font-size: 11px; }
         .widget-content { padding: 8px; background: #dcdcdc; }
-        .widget-content textarea { width: 100%; height: 120px; font-family: inherit; border: 1px solid #808080; background: #ffffcc; padding: 4px; resize: vertical; font-size: 12px; }
+        .widget-content textarea { width: 100%; height: 100px; font-family: inherit; border: 1px solid #808080; background: white; padding: 4px; resize: vertical; }
         .close-widget { cursor: pointer; }
         
-        /* Desktop Windows (for opening links) */
+        /* Windows (for opened links) */
         .desktop-window {
             position: fixed; background: #c0c0c0; border: 2px solid #fff;
             border-right-color: #000; border-bottom-color: #000;
-            min-width: 500px; min-height: 400px; z-index: 2000;
-            display: flex; flex-direction: column;
+            min-width: 400px; min-height: 300px; z-index: 2000;
+            display: flex; flex-direction: column; resize: both; overflow: auto;
         }
         .desktop-window .title-bar {
             background: #000080; color: white; padding: 6px 8px;
             display: flex; justify-content: space-between; cursor: move;
+            flex-shrink: 0;
         }
         .desktop-window .window-content { flex: 1; padding: 0; overflow: auto; background: white; }
         .desktop-window iframe { width: 100%; height: 100%; border: none; }
-        .window-controls span { cursor: pointer; margin-left: 8px; }
-        
-        /* Folder Window */
-        .folder-window {
-            position: fixed; background: #c0c0c0; border: 2px solid #fff;
-            border-right-color: #000; border-bottom-color: #000;
-            min-width: 400px; min-height: 300px; z-index: 1100;
-            display: none; flex-direction: column;
-        }
-        .folder-window .title-bar {
-            background: #000080; color: white; padding: 6px 8px;
-            display: flex; justify-content: space-between; cursor: move;
-        }
-        .folder-window .folder-content {
-            padding: 15px; background: #fff; flex: 1; overflow-y: auto;
-            display: flex; flex-wrap: wrap; gap: 15px;
-        }
-        .folder-item { width: 80px; text-align: center; cursor: pointer; }
-        .folder-item img { width: 48px; height: 48px; }
-        .folder-item .folder-item-label { font-size: 10px; word-break: break-word; }
+        .maximize-window, .close-window { cursor: pointer; margin-left: 6px; }
         
         /* Taskbar */
         .taskbar {
             background: #c0c0c0; border-top: 2px solid #ffffff; padding: 4px 8px;
-            display: flex; align-items: center; gap: 4px; position: fixed;
+            display: flex; align-items: center; gap: 8px; position: fixed;
             bottom: 0; left: 0; right: 0; height: 40px; z-index: 1000;
         }
         .start-button {
             background: #c0c0c0; border: 2px solid #ffffff; border-right-color: #808080;
             border-bottom-color: #808080; padding: 4px 12px; font-weight: bold;
-            cursor: pointer; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
         }
         .start-button:active { border: 2px solid #808080; border-right-color: #fff; border-bottom-color: #fff; }
         .start-menu {
@@ -121,25 +95,12 @@
         .start-menu-item { padding: 8px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .start-menu-item:hover { background: #000080; color: white; }
         .start-menu-divider { height: 1px; background: #808080; margin: 4px 0; }
-        .taskbar-time { margin-left: auto; background: #c0c0c0; border: 1px solid #808080; padding: 2px 8px; font-size: 11px; flex-shrink: 0; }
+        .taskbar-time { margin-left: auto; background: #c0c0c0; border: 1px solid #808080; padding: 2px 8px; font-size: 11px; }
         .taskbar-window-btn {
             background: #c0c0c0; border: 1px solid #808080; padding: 2px 8px;
             font-size: 11px; cursor: pointer; max-width: 150px; overflow: hidden;
-            text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0;
+            text-overflow: ellipsis; white-space: nowrap;
         }
-        .taskbar-window-btn.active { background: #000080; color: white; }
-        
-        /* All Notes Viewer */
-        .notes-viewer {
-            position: fixed; top: 100px; left: 100px; width: 500px;
-            background: #c0c0c0; border: 2px solid #fff; border-right-color: #000;
-            border-bottom-color: #000; z-index: 1100; display: none; flex-direction: column;
-        }
-        .notes-viewer .title-bar { background: #000080; color: white; padding: 6px 8px; display: flex; justify-content: space-between; cursor: move; }
-        .notes-viewer .notes-list { padding: 10px; background: #fff; max-height: 400px; overflow-y: auto; }
-        .note-item { border-bottom: 1px solid #ccc; padding: 8px; margin-bottom: 5px; }
-        .note-date { font-size: 10px; color: #666; }
-        .note-text { font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
         
         /* Modals */
         .modal {
@@ -165,17 +126,26 @@
             background: #000; color: #fff; display: flex; justify-content: center;
             align-items: center; z-index: 10000; font-family: monospace; font-size: 20px;
         }
-        .recycle-window {
+        .screensaver {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: none; justify-content: center;
+            align-items: center; cursor: pointer;
+        }
+        .screensaver.active { display: flex; }
+        .recycle-window, .sticker-selector-window {
             position: fixed; top: 100px; left: 100px; width: 400px;
             background: #c0c0c0; border: 2px solid #fff; border-right-color: #000;
-            border-bottom-color: #000; z-index: 1100; display: none; flex-direction: column;
+            border-bottom-color: #000; z-index: 1100; display: none;
         }
-        .recycle-window .title-bar { background: #000080; color: white; padding: 6px 8px; display: flex; justify-content: space-between; cursor: move; }
-        .recycle-window .recycle-content { padding: 10px; background: #fff; max-height: 300px; overflow-y: auto; }
-        
+        .folder-window {
+            position: fixed; background: #c0c0c0; border: 2px solid #fff;
+            border-right-color: #000; border-bottom-color: #000;
+            min-width: 300px; min-height: 200px; z-index: 1100; display: none;
+        }
         @media (max-width: 768px) {
-            .icons-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-            .desktop-icon, .folder-icon { position: static !important; width: auto; }
+            .icons-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px 10px; }
+            .desktop-icon, .folder-icon { position: static !important; width: auto; margin: 0 auto; }
+            .desktop-window { top: 10px !important; left: 10px !important; right: 10px !important; bottom: 50px !important; width: auto !important; height: auto !important; min-width: unset; }
         }
     </style>
 </head>
@@ -187,7 +157,7 @@
 
 <div class="taskbar">
     <div class="start-button" id="startButton">🪟 Start</div>
-    <div id="taskbarWindows" style="display: flex; gap: 4px; overflow-x: auto; flex: 1;"></div>
+    <div id="taskbarWindows"></div>
     <div class="taskbar-time" id="clock"></div>
 </div>
 
@@ -195,13 +165,14 @@
     <div class="start-menu-item" id="addIconBtn">📌 Add Icon</div>
     <div class="start-menu-item" id="addFolderBtn">📁 Add Folder</div>
     <div class="start-menu-item" id="addWidgetBtn">📋 Add Sticky Note</div>
-    <div class="start-menu-item" id="addStickerBtn">✨ Add Sticker</div>
-    <div class="start-menu-item" id="viewAllNotesBtn">📖 View All Notes</div>
+    <div class="start-menu-item" id="addStickerBtn">✨ Add Decorative Sticker</div>
     <div class="start-menu-divider"></div>
     <div class="start-menu-item" id="changeWallpaperBtn">🖼️ Change Wallpaper</div>
+    <div class="start-menu-item" id="changeThemeBtn">🎨 Change Theme</div>
     <div class="start-menu-item" id="recycleBinBtn">🗑️ Recycle Bin</div>
     <div class="start-menu-divider"></div>
     <div class="start-menu-item" id="sortByNameBtn">🔤 Sort Icons by Name</div>
+    <div class="start-menu-item" id="sortByDateBtn">📅 Sort by Date</div>
     <div class="start-menu-divider"></div>
     <div class="start-menu-item" id="legacyBtn">💾 Legacy Export</div>
     <div class="start-menu-divider"></div>
@@ -209,17 +180,19 @@
 </div>
 
 <!-- Modals -->
-<div class="modal" id="iconModal"><div class="modal-content"><div class="modal-title-bar"><span id="modalTitle">Add Icon</span><span style="cursor:pointer" id="closeModal">✗</span></div><div class="modal-body"><input type="text" id="iconLabel" placeholder="Icon name"><input type="text" id="iconLink" placeholder="Link URL (bucketlist.html)"><input type="text" id="iconImageUrl" placeholder="Emoji (📝) or image URL"><input type="password" id="iconPin" placeholder="PIN (optional)"><button id="saveIconBtn" class="retro-button">Save</button></div></div></div>
+<div class="modal" id="iconModal"><div class="modal-content" id="modalContent"><div class="modal-title-bar" id="modalTitleBar"><span id="modalTitle">Add Icon</span><span style="cursor:pointer" id="closeModal">✗</span></div><div class="modal-body"><input type="text" id="iconLabel" placeholder="📝 Icon name (e.g., Bucket List)"><input type="text" id="iconLink" placeholder="🔗 Link URL (bucketlist.html or https://google.com)"><input type="text" id="iconImageUrl" placeholder="🖼️ Emoji (📝) or image URL"><input type="password" id="iconPin" placeholder="🔒 PIN to unlock (optional, leave blank for no lock)"><button id="saveIconBtn" class="retro-button">Save Icon</button></div></div></div>
 
-<div class="modal" id="wallpaperModal"><div class="modal-content"><div class="modal-title-bar">Change Wallpaper<span style="cursor:pointer" id="closeWallpaperModal">✗</span></div><div class="modal-body"><input type="text" id="wallpaperUrl" placeholder="Image URL"><button id="setWallpaperBtn" class="retro-button">Set</button><button id="resetWallpaperBtn" class="retro-button">Reset</button></div></div></div>
+<div class="modal" id="wallpaperModal"><div class="modal-content"><div class="modal-title-bar">Change Wallpaper<span style="cursor:pointer" id="closeWallpaperModal">✗</span></div><div class="modal-body"><input type="text" id="wallpaperUrl" placeholder="https://example.com/wallpaper.jpg"><button id="setWallpaperBtn" class="retro-button">Set Wallpaper</button><button id="resetWallpaperBtn" class="retro-button">Reset to Default</button></div></div></div>
+
+<div class="modal" id="themeModal"><div class="modal-content"><div class="modal-title-bar">Theme Colors<span style="cursor:pointer" id="closeThemeModal">✗</span></div><div class="modal-body"><select id="themeSelect"><option value="teal">Windows 95 Teal</option><option value="silver">Classic Silver</option></select><button id="applyThemeBtn" class="retro-button">Apply</button></div></div></div>
 
 <div class="modal" id="settingsModal"><div class="modal-content"><div class="modal-title-bar">Settings<span style="cursor:pointer" id="closeSettingsModal">✗</span></div><div class="modal-body"><label><input type="checkbox" id="startupSoundToggle"> Play startup sound</label></div></div></div>
 
-<div class="modal" id="stickerSelectorModal"><div class="modal-content"><div class="modal-title-bar">Add Sticker<span style="cursor:pointer" id="closeStickerSelectorModal">✗</span></div><div class="modal-body"><div id="emojiGrid" style="display: flex; flex-wrap: wrap; gap: 10px;"></div><input type="text" id="stickerImageUrl" placeholder="Or enter image URL" style="margin-top:10px;"><button id="addImageStickerBtn" class="retro-button">Add Image Sticker</button></div></div></div>
+<div class="modal" id="stickerSelectorModal"><div class="modal-content"><div class="modal-title-bar">Add Decorative Sticker<span style="cursor:pointer" id="closeStickerSelectorModal">✗</span></div><div class="modal-body"><p>Choose a sticker type:</p><button id="stickerEmojiBtn" class="retro-button">😀 Emoji Sticker</button><button id="stickerImageUrlBtn" class="retro-button">🖼️ Image URL Sticker</button><div id="emojiGrid" style="display:none; margin-top:10px; display: flex; flex-wrap: wrap; gap: 10px;"></div><input type="text" id="stickerImageUrl" placeholder="Image URL" style="display:none; margin-top:10px;"><button id="addImageStickerBtn" class="retro-button" style="display:none;">Add Image Sticker</button></div></div></div>
 
-<div class="notes-viewer" id="notesViewer"><div class="title-bar">📖 All Sticky Notes<span style="cursor:pointer" id="closeNotesViewer">✗</span></div><div class="notes-list" id="notesList"></div></div>
+<div class="recycle-window" id="recycleWindow"><div class="title-bar" id="recycleTitleBar">🗑️ Recycle Bin<span style="cursor:pointer" id="closeRecycleWindow">✗</span></div><div class="content" id="recycleContent" style="padding:10px; max-height:300px; overflow-y:auto; background:#fff;"></div><div style="padding:8px"><button id="emptyRecycleBtn" class="retro-button">Empty Bin</button></div></div>
 
-<div class="recycle-window" id="recycleWindow"><div class="title-bar">🗑️ Recycle Bin<span style="cursor:pointer" id="closeRecycleWindow">✗</span></div><div class="recycle-content" id="recycleContent"></div><div style="padding:8px"><button id="emptyRecycleBtn" class="retro-button">Empty Bin</button></div></div>
+<div class="screensaver" id="screensaver"><div class="screensaver-text">✨ ~ Dreaming ~ ✨</div></div>
 
 <script>
     // ========== DATA ==========
@@ -228,18 +201,18 @@
     let stickers = [];
     let widgets = [];
     let recycleBin = [];
-    let allNotes = [];
-    let currentWallpaper = '';
     let openWindows = [];
-    let nextZ = 2000;
+    let currentWallpaper = '';
+    let currentTheme = 'teal';
+    let nextWindowZ = 2100;
     
-    // Save/Load
     function saveAll() {
-        localStorage.setItem('retroData', JSON.stringify({ icons, folders, stickers, widgets, recycleBin, allNotes, currentWallpaper }));
+        const allData = { icons, folders, stickers, widgets, recycleBin, currentWallpaper, currentTheme };
+        localStorage.setItem('retroDesktop', JSON.stringify(allData));
     }
     
     function loadAll() {
-        const saved = localStorage.getItem('retroData');
+        const saved = localStorage.getItem('retroDesktop');
         if (saved) {
             const data = JSON.parse(saved);
             icons = data.icons || [];
@@ -247,17 +220,18 @@
             stickers = data.stickers || [];
             widgets = data.widgets || [];
             recycleBin = data.recycleBin || [];
-            allNotes = data.allNotes || [];
             currentWallpaper = data.currentWallpaper || '';
+            currentTheme = data.currentTheme || 'teal';
         }
         if (icons.length === 0) {
             icons = [
-                { id: Date.now(), label: "Bucket List", link: "bucketlist.html", image: "📝", x: 30, y: 30, date: Date.now(), pin: "", folderId: null },
-                { id: Date.now()+1, label: "Comfort Corner", link: "comfort.html", image: "🧸", x: 130, y: 30, date: Date.now()+1, pin: "", folderId: null },
-                { id: Date.now()+2, label: "Recipes", link: "recipes.html", image: "🍳", x: 230, y: 30, date: Date.now()+2, pin: "", folderId: null },
-                { id: Date.now()+3, label: "Journal", link: "journal.html", image: "📔", x: 330, y: 30, date: Date.now()+3, pin: "", folderId: null }
+                { id: Date.now(), label: "Bucket List", link: "bucketlist.html", image: "📝", x: 30, y: 30, dateAdded: Date.now(), pin: "" },
+                { id: Date.now()+1, label: "Comfort Corner", link: "comfort.html", image: "🧸", x: 130, y: 30, dateAdded: Date.now()+1, pin: "" },
+                { id: Date.now()+2, label: "Recipes", link: "recipes.html", image: "🍳", x: 230, y: 30, dateAdded: Date.now()+2, pin: "" },
+                { id: Date.now()+3, label: "Journal", link: "journal.html", image: "📔", x: 330, y: 30, dateAdded: Date.now()+3, pin: "" }
             ];
         }
+        applyTheme();
         if (currentWallpaper) document.body.style.backgroundImage = `url(${currentWallpaper})`;
         else document.body.style.background = '#008080';
         renderAll();
@@ -275,38 +249,46 @@
         const container = document.getElementById('iconsContainer');
         const existing = container.querySelectorAll('.desktop-icon:not(.folder-icon)');
         existing.forEach(el => el.remove());
-        
-        const desktopIcons = icons.filter(i => !i.folderId);
-        desktopIcons.forEach(icon => {
+        icons.forEach(icon => {
             const div = document.createElement('div');
             div.className = 'desktop-icon';
             div.setAttribute('data-id', icon.id);
-            div.setAttribute('draggable', 'true');
-            const isEmoji = icon.image && (icon.image.length <= 4);
-            div.innerHTML = `<div class="icon-action-btn edit-icon-btn">✏️</div>
-                             <div class="icon-action-btn delete-icon-btn">✗</div>
-                             ${icon.pin ? `<div class="icon-action-btn lock-icon-btn">🔒</div>` : ''}
-                             ${isEmoji ? `<div class="icon-img">${icon.image}</div>` : `<img src="${icon.image}" style="width:48px; height:48px;" onerror="this.parentElement.innerHTML='<div class=icon-img>📄</div>'">`}
+            const isEmoji = icon.image && (icon.image.length <= 4 || /[\u{1F300}-\u{1F9FF}]/u.test(icon.image));
+            div.innerHTML = `<div class="icon-action-btn edit-icon-btn" data-id="${icon.id}">✏️</div>
+                             <div class="icon-action-btn delete-icon-btn" data-id="${icon.id}">✗</div>
+                             ${icon.pin ? `<div class="icon-action-btn lock-icon-btn" data-id="${icon.id}">🔒</div>` : ''}
+                             ${isEmoji ? `<div class="icon-img">${icon.image || '📄'}</div>` : `<img src="${icon.image}" onerror="this.parentElement.innerHTML='<div class=icon-img>📄</div>'">`}
                              <div class="icon-label">${escapeHtml(icon.label)}</div>`;
             if (window.innerWidth > 768) {
                 div.style.position = 'absolute';
                 div.style.left = (icon.x || 30) + 'px';
                 div.style.top = (icon.y || 30) + 'px';
+                makeDraggable(div, icon.id, 'icon');
             }
             container.appendChild(div);
-            
-            // Drag and drop for folders
-            div.ondragstart = (e) => { e.dataTransfer.setData('iconId', icon.id); div.classList.add('dragging'); };
-            div.ondragend = () => div.classList.remove('dragging');
-            div.ondragover = (e) => e.preventDefault();
-            
-            div.onclick = (e) => {
+        });
+        attachIconEvents();
+    }
+    
+    function attachIconEvents() {
+        document.querySelectorAll('.desktop-icon').forEach(el => {
+            const id = parseInt(el.dataset.id);
+            const icon = icons.find(i => i.id === id);
+            el.onclick = (e) => {
                 if (e.target.classList.contains('icon-action-btn')) return;
-                if (icon.pin) { if (prompt('Enter PIN:') !== icon.pin) { alert('Wrong PIN'); return; } }
-                if (icon.link) openWindow(icon.link, icon.label);
+                if (icon && icon.pin) {
+                    const entered = prompt('Enter PIN to open:');
+                    if (entered !== icon.pin) { alert('Wrong PIN!'); return; }
+                }
+                if (icon && icon.link) openInDesktopWindow(icon.link, icon.label);
             };
-            div.querySelector('.edit-icon-btn').onclick = (e) => { e.stopPropagation(); editIcon(icon.id); };
-            div.querySelector('.delete-icon-btn').onclick = (e) => { e.stopPropagation(); deleteIcon(icon.id); };
+            el.oncontextmenu = (e) => { e.preventDefault(); openEditModal(id); return false; };
+            el.ondblclick = () => openEditModal(id);
+            let pressTimer;
+            el.ontouchstart = () => { pressTimer = setTimeout(() => { el.classList.add('long-press'); openEditModal(id); }, 800); };
+            el.ontouchend = () => { clearTimeout(pressTimer); setTimeout(() => el.classList.remove('long-press'), 100); };
+            el.querySelector('.edit-icon-btn')?.addEventListener('click', (e) => { e.stopPropagation(); openEditModal(id); });
+            el.querySelector('.delete-icon-btn')?.addEventListener('click', (e) => { e.stopPropagation(); deleteIcon(id); });
         });
     }
     
@@ -314,44 +296,27 @@
         const container = document.getElementById('iconsContainer');
         const existing = container.querySelectorAll('.folder-icon');
         existing.forEach(el => el.remove());
-        
         folders.forEach(folder => {
             const div = document.createElement('div');
             div.className = 'folder-icon';
             div.setAttribute('data-id', folder.id);
-            div.setAttribute('draggable', 'true');
-            div.innerHTML = `<div class="icon-action-btn edit-icon-btn">✏️</div>
-                             <div class="icon-action-btn delete-icon-btn">✗</div>
-                             ${folder.pin ? `<div class="icon-action-btn lock-icon-btn">🔒</div>` : ''}
+            div.innerHTML = `<div class="icon-action-btn edit-icon-btn" data-id="${folder.id}">✏️</div>
+                             <div class="icon-action-btn delete-icon-btn" data-id="${folder.id}">✗</div>
                              <div class="icon-img">📁</div>
                              <div class="icon-label">${escapeHtml(folder.name)}</div>`;
             if (window.innerWidth > 768) {
                 div.style.position = 'absolute';
                 div.style.left = (folder.x || 30) + 'px';
                 div.style.top = (folder.y || 30) + 'px';
+                makeDraggable(div, folder.id, 'folder');
             }
             container.appendChild(div);
-            
-            div.ondragover = (e) => e.preventDefault();
-            div.ondrop = (e) => {
-                e.preventDefault();
-                const iconId = parseInt(e.dataTransfer.getData('iconId'));
-                if (iconId) {
-                    const icon = icons.find(i => i.id === iconId);
-                    if (icon && !icon.folderId) {
-                        icon.folderId = folder.id;
-                        saveAll();
-                        renderAll();
-                    }
-                }
-            };
-            
-            div.onclick = (e) => {
-                if (e.target.classList.contains('icon-action-btn')) return;
-                openFolder(folder.id);
-            };
-            div.querySelector('.edit-icon-btn').onclick = (e) => { e.stopPropagation(); editFolder(folder.id); };
-            div.querySelector('.delete-icon-btn').onclick = (e) => { e.stopPropagation(); deleteFolderItem(folder.id); };
+        });
+        document.querySelectorAll('.folder-icon').forEach(el => {
+            const id = parseInt(el.dataset.id);
+            el.onclick = (e) => { if (!e.target.classList.contains('icon-action-btn')) openFolder(id); };
+            el.querySelector('.edit-icon-btn')?.addEventListener('click', (e) => { e.stopPropagation(); editFolderName(id); });
+            el.querySelector('.delete-icon-btn')?.addEventListener('click', (e) => { e.stopPropagation(); deleteFolder(id); });
         });
     }
     
@@ -363,31 +328,15 @@
             div.className = 'sticker';
             div.style.left = sticker.x + 'px';
             div.style.top = sticker.y + 'px';
-            div.style.width = (sticker.w || 60) + 'px';
-            div.style.height = (sticker.w || 60) + 'px';
-            div.innerHTML = `<div class="delete-sticker" data-id="${sticker.id}">✗</div>
-                            <div class="sticker-content" style="font-size:${sticker.w || 60}px;">${sticker.isImage ? `<img src="${sticker.emoji}" style="width:100%; height:100%;">` : sticker.emoji}</div>
-                            <div class="resize-handle"></div>`;
+            div.innerHTML = `<div class="delete-sticker" data-id="${sticker.id}">✗</div>${sticker.isImage ? `<img src="${sticker.emoji}" style="width:48px; height:48px;">` : sticker.emoji}`;
             document.querySelector('.desktop').appendChild(div);
             makeDraggable(div, sticker.id, 'sticker');
-            div.querySelector('.delete-sticker').onclick = (e) => { e.stopPropagation(); stickers = stickers.filter(s => s.id !== sticker.id); saveAll(); renderStickers(); };
-            
-            let resizeStart = null;
-            div.querySelector('.resize-handle').onmousedown = (e) => {
+            div.querySelector('.delete-sticker')?.addEventListener('click', (e) => {
                 e.stopPropagation();
-                resizeStart = { x: e.clientX, w: sticker.w || 60 };
-                document.onmousemove = (m) => {
-                    if (resizeStart) {
-                        const newW = Math.max(30, Math.min(200, resizeStart.w + (m.clientX - resizeStart.x)));
-                        div.style.width = newW + 'px';
-                        div.style.height = newW + 'px';
-                        div.querySelector('.sticker-content').style.fontSize = newW + 'px';
-                        sticker.w = newW;
-                        saveAll();
-                    }
-                };
-                document.onmouseup = () => { resizeStart = null; document.onmousemove = null; };
-            };
+                stickers = stickers.filter(s => s.id !== sticker.id);
+                saveAll();
+                renderStickers();
+            });
         });
     }
     
@@ -399,76 +348,103 @@
             div.className = 'widget';
             div.style.left = widget.x + 'px';
             div.style.top = widget.y + 'px';
-            div.innerHTML = `<div class="widget-title-bar"><span>📝 Note</span><span class="close-widget">✗</span></div>
-                            <div class="widget-content"><textarea data-id="${widget.id}">${escapeHtml(widget.text)}</textarea></div>`;
+            div.innerHTML = `<div class="widget-title-bar"><span>📝 Sticky Note</span><span class="close-widget" data-id="${widget.id}">✗</span></div>
+                            <div class="widget-content"><textarea data-id="${widget.id}" placeholder="Write your note here...">${escapeHtml(widget.text)}</textarea></div>`;
             document.querySelector('.desktop').appendChild(div);
             makeDraggable(div, widget.id, 'widget');
-            div.querySelector('.close-widget').onclick = () => { widgets = widgets.filter(w => w.id !== widget.id); saveAll(); renderWidgets(); };
-            const ta = div.querySelector('textarea');
-            ta.oninput = (e) => {
-                widget.text = e.target.value;
+            div.querySelector('.close-widget').addEventListener('click', () => {
+                widgets = widgets.filter(w => w.id !== widget.id);
                 saveAll();
-                allNotes.unshift({ id: Date.now(), text: e.target.value, date: new Date().toISOString() });
-                if (allNotes.length > 50) allNotes.pop();
-                saveAll();
-            };
+                renderWidgets();
+            });
+            const textarea = div.querySelector('textarea');
+            textarea.addEventListener('input', (e) => { widget.text = e.target.value; saveAll(); });
         });
     }
     
-    function makeDraggable(el, id, type) {
-        let startX, startY, startLeft, startTop;
-        const handle = el.classList.contains('widget') ? el.querySelector('.widget-title-bar') : el;
-        handle.onmousedown = (e) => {
-            if (e.target.classList.contains('delete-sticker') || e.target.classList.contains('close-widget')) return;
+    function makeDraggable(element, id, type) {
+        let pos1=0,pos2=0,pos3=0,pos4=0;
+        element.onmousedown = dragMouseDown;
+        function dragMouseDown(e) {
+            if (e.target.classList?.contains('icon-action-btn') || e.target.classList?.contains('delete-sticker') || e.target.classList?.contains('close-widget')) return;
             e.preventDefault();
-            startX = e.clientX;
-            startY = e.clientY;
-            startLeft = el.offsetLeft;
-            startTop = el.offsetTop;
-            document.onmousemove = (m) => {
-                let newLeft = startLeft + (m.clientX - startX);
-                let newTop = startTop + (m.clientY - startY);
-                newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - 100));
-                newTop = Math.max(0, Math.min(newTop, window.innerHeight - 100));
-                el.style.left = newLeft + 'px';
-                el.style.top = newTop + 'px';
-                if (type === 'sticker') { const s = stickers.find(i => i.id === id); if (s) { s.x = newLeft; s.y = newTop; } }
-                if (type === 'widget') { const w = widgets.find(i => i.id === id); if (w) { w.x = newLeft; w.y = newTop; } }
-            };
-            document.onmouseup = () => { document.onmousemove = null; saveAll(); };
-        };
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+            element.style.zIndex = '1000';
+        }
+        function elementDrag(e) {
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            let newTop = element.offsetTop - pos2;
+            let newLeft = element.offsetLeft - pos1;
+            newTop = Math.max(0, Math.min(newTop, window.innerHeight - 100));
+            newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - 100));
+            element.style.top = newTop + "px";
+            element.style.left = newLeft + "px";
+            updatePosition(type, id, newLeft, newTop);
+        }
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+            element.style.zIndex = '';
+            saveAll();
+        }
     }
     
-    function openWindow(url, title) {
-        const winId = 'win_' + Date.now();
+    function updatePosition(type, id, x, y) {
+        if (type === 'icon') { const item = icons.find(i => i.id === id); if (item) { item.x = x; item.y = y; } }
+        else if (type === 'folder') { const item = folders.find(f => f.id === id); if (item) { item.x = x; item.y = y; } }
+        else if (type === 'sticker') { const item = stickers.find(s => s.id === id); if (item) { item.x = x; item.y = y; } }
+        else if (type === 'widget') { const item = widgets.find(w => w.id === id); if (item) { item.x = x; item.y = y; } }
+    }
+    
+    // Desktop Windows (for opening links)
+    function openInDesktopWindow(url, title) {
+        const windowId = 'win_' + Date.now() + '_' + Math.random();
+        const zIndex = nextWindowZ++;
         const win = document.createElement('div');
         win.className = 'desktop-window';
-        win.id = winId;
+        win.id = windowId;
         win.style.left = '100px';
         win.style.top = '80px';
         win.style.width = '700px';
         win.style.height = '500px';
-        win.style.zIndex = nextZ++;
-        win.innerHTML = `<div class="title-bar"><span>${escapeHtml(title)}</span><div class="window-controls"><span class="maximize">□</span><span class="close">✗</span></div></div>
-                        <div class="window-content"><iframe src="${url}"></iframe></div>`;
+        win.style.zIndex = zIndex;
+        win.innerHTML = `<div class="title-bar"><span>${escapeHtml(title || 'Window')}</span><div><span class="maximize-window">□</span><span class="close-window">✗</span></div></div>
+                        <div class="window-content"><iframe src="${url}" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe></div>`;
         document.body.appendChild(win);
         
-        let startX, startY, startLeft, startTop;
-        win.querySelector('.title-bar').onmousedown = (e) => {
-            if (e.target.classList.contains('close') || e.target.classList.contains('maximize')) return;
+        // Make draggable
+        const titleBar = win.querySelector('.title-bar');
+        let pos1=0,pos2=0,pos3=0,pos4=0;
+        titleBar.onmousedown = dragMouseDown;
+        function dragMouseDown(e) {
+            if (e.target.classList.contains('close-window') || e.target.classList.contains('maximize-window')) return;
             e.preventDefault();
-            startX = e.clientX;
-            startY = e.clientY;
-            startLeft = win.offsetLeft;
-            startTop = win.offsetTop;
-            document.onmousemove = (m) => {
-                win.style.left = (startLeft + (m.clientX - startX)) + 'px';
-                win.style.top = (startTop + (m.clientY - startY)) + 'px';
-            };
-            document.onmouseup = () => { document.onmousemove = null; };
-        };
-        win.querySelector('.close').onclick = () => { win.remove(); updateTaskbar(); };
-        win.querySelector('.maximize').onclick = () => {
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+            win.style.zIndex = nextWindowZ++;
+        }
+        function elementDrag(e) {
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            win.style.top = (win.offsetTop - pos2) + "px";
+            win.style.left = (win.offsetLeft - pos1) + "px";
+        }
+        function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
+        
+        win.querySelector('.close-window').onclick = () => { win.remove(); updateTaskbarWindows(); };
+        win.querySelector('.maximize-window').onclick = () => {
             if (win.style.width === '100%') {
                 win.style.width = '700px'; win.style.height = '500px';
                 win.style.left = '100px'; win.style.top = '80px';
@@ -477,125 +453,95 @@
                 win.style.left = '0'; win.style.top = '0';
             }
         };
-        win.onclick = () => win.style.zIndex = nextZ++;
+        win.onclick = () => { win.style.zIndex = nextWindowZ++; };
         
+        // Add to taskbar
+        const taskbarWindows = document.getElementById('taskbarWindows');
         const taskbarBtn = document.createElement('div');
         taskbarBtn.className = 'taskbar-window-btn';
-        taskbarBtn.innerText = title;
-        taskbarBtn.onclick = () => { win.style.zIndex = nextZ++; win.style.display = 'flex'; updateActiveTaskbar(taskbarBtn); };
-        document.getElementById('taskbarWindows').appendChild(taskbarBtn);
-        openWindows.push({ id: winId, btn: taskbarBtn, win });
-        updateActiveTaskbar(taskbarBtn);
+        taskbarBtn.innerText = title || 'Window';
+        taskbarBtn.onclick = () => { win.style.zIndex = nextWindowZ++; win.style.display = 'flex'; };
+        taskbarWindows.appendChild(taskbarBtn);
+        
+        openWindows.push({ id: windowId, btn: taskbarBtn, win: win });
     }
     
-    function updateTaskbar() {
+    function updateTaskbarWindows() {
+        const taskbarWindows = document.getElementById('taskbarWindows');
+        taskbarWindows.innerHTML = '';
         openWindows = openWindows.filter(w => document.getElementById(w.id));
-        document.getElementById('taskbarWindows').innerHTML = '';
-        openWindows.forEach(w => document.getElementById('taskbarWindows').appendChild(w.btn));
+        openWindows.forEach(w => taskbarWindows.appendChild(w.btn));
     }
     
-    function updateActiveTaskbar(activeBtn) {
-        document.querySelectorAll('.taskbar-window-btn').forEach(btn => btn.classList.remove('active'));
-        activeBtn.classList.add('active');
+    function openEditModal(id) {
+        const icon = icons.find(i => i.id === id);
+        if (!icon) return;
+        window.editingIconId = id;
+        document.getElementById('modalTitle').innerText = 'Edit Icon';
+        document.getElementById('iconLabel').value = icon.label;
+        document.getElementById('iconLink').value = icon.link || '';
+        document.getElementById('iconImageUrl').value = icon.image || '';
+        document.getElementById('iconPin').value = icon.pin || '';
+        document.getElementById('iconModal').style.display = 'flex';
+    }
+    
+    function deleteIcon(id) {
+        if (confirm('Move to Recycle Bin?')) {
+            const icon = icons.find(i => i.id === id);
+            if (icon) { recycleBin.push({ ...icon, deletedAt: Date.now() }); icons = icons.filter(i => i.id !== id); saveAll(); renderAll(); }
+        }
+    }
+    
+    function deleteFolder(id) {
+        if (confirm('Move folder to Recycle Bin?')) {
+            const folder = folders.find(f => f.id === id);
+            if (folder) { recycleBin.push({ ...folder, type: 'folder', deletedAt: Date.now() }); folders = folders.filter(f => f.id !== id); saveAll(); renderAll(); }
+        }
     }
     
     function openFolder(id) {
         const folder = folders.find(f => f.id === id);
         if (!folder) return;
-        if (folder.pin && prompt('Enter folder PIN:') !== folder.pin) { alert('Wrong PIN'); return; }
-        
         let win = document.getElementById(`folder-${id}`);
-        if (win) { win.style.display = 'flex'; return; }
-        
+        if (win) { win.style.display = 'block'; return; }
         win = document.createElement('div');
         win.className = 'folder-window';
         win.id = `folder-${id}`;
         win.style.left = '150px';
         win.style.top = '150px';
-        win.style.width = '500px';
-        win.style.height = '400px';
-        win.style.zIndex = nextZ++;
-        win.innerHTML = `<div class="title-bar"><span>📁 ${escapeHtml(folder.name)}</span><span class="close-folder">✗</span></div>
-                        <div class="folder-content" id="folderContent-${id}"></div>`;
+        win.innerHTML = `<div class="title-bar"><span>📁 ${escapeHtml(folder.name)}</span><span style="cursor:pointer" class="close-folder">✗</span></div><div class="content" id="folder-content-${id}" style="padding:10px;"></div>`;
         document.body.appendChild(win);
-        
-        let startX, startY, startLeft, startTop;
-        win.querySelector('.title-bar').onmousedown = (e) => {
-            if (e.target.classList.contains('close-folder')) return;
-            e.preventDefault();
-            startX = e.clientX; startY = e.clientY;
-            startLeft = win.offsetLeft; startTop = win.offsetTop;
-            document.onmousemove = (m) => {
-                win.style.left = (startLeft + (m.clientX - startX)) + 'px';
-                win.style.top = (startTop + (m.clientY - startY)) + 'px';
-            };
-            document.onmouseup = () => { document.onmousemove = null; };
-        };
-        win.querySelector('.close-folder').onclick = () => win.remove();
-        
-        const content = document.getElementById(`folderContent-${id}`);
-        const folderIcons = icons.filter(i => i.folderId === id);
-        content.innerHTML = '';
-        folderIcons.forEach(icon => {
-            const iconDiv = document.createElement('div');
-            iconDiv.className = 'folder-item';
-            const isEmoji = icon.image && icon.image.length <= 4;
-            iconDiv.innerHTML = `${isEmoji ? `<div style="font-size:48px;">${icon.image}</div>` : `<img src="${icon.image}" onerror="this.src=''">`}
-                                <div class="folder-item-label">${escapeHtml(icon.label)}</div>
-                                <button class="retro-button" style="font-size:9px; padding:2px 4px; margin-top:4px;" onclick="moveIconToDesktop(${icon.id})">📤 Move</button>`;
-            iconDiv.onclick = (e) => { if (!e.target.tagName === 'BUTTON') { if (icon.link) openWindow(icon.link, icon.label); } };
-            content.appendChild(iconDiv);
+        makeDraggable(win, id, 'window');
+        win.querySelector('.close-folder').addEventListener('click', () => win.remove());
+        const content = win.querySelector(`#folder-content-${id}`);
+        renderFolderContents(folder, content);
+        win.style.display = 'block';
+    }
+    
+    function renderFolderContents(folder, container) {
+        container.innerHTML = '';
+        (folder.items || []).forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'folder-icon';
+            div.style.display = 'inline-block';
+            div.style.width = '80px';
+            const isEmoji = item.image && (item.image.length <= 4);
+            div.innerHTML = `${isEmoji ? `<div class="icon-img">${item.image}</div>` : `<img src="${item.image}" width="32">`}<div class="icon-label">${escapeHtml(item.label)}</div>`;
+            div.onclick = () => { if (item.link) openInDesktopWindow(item.link, item.label); };
+            container.appendChild(div);
         });
-        if (folderIcons.length === 0) content.innerHTML = '<div style="padding:20px; text-align:center;">Empty — drag icons onto the folder on desktop</div>';
-        win.style.display = 'flex';
     }
     
-    window.moveIconToDesktop = function(iconId) {
-        const icon = icons.find(i => i.id === iconId);
-        if (icon) { icon.folderId = null; saveAll(); renderAll(); }
-    };
-    
-    function editIcon(id) {
-        const icon = icons.find(i => i.id === id);
-        if (!icon) return;
-        const newLabel = prompt('New name:', icon.label);
-        if (newLabel) icon.label = newLabel;
-        const newLink = prompt('New link:', icon.link);
-        if (newLink !== null) icon.link = newLink;
-        const newPin = prompt('New PIN (leave blank to remove):', icon.pin);
-        icon.pin = newPin || '';
-        saveAll(); renderAll();
-    }
-    
-    function deleteIcon(id) {
-        if (confirm('Move to recycle bin?')) {
-            const icon = icons.find(i => i.id === id);
-            if (icon) { recycleBin.push({ ...icon }); icons = icons.filter(i => i.id !== id); saveAll(); renderAll(); }
-        }
-    }
-    
-    function editFolder(id) {
+    function editFolderName(id) {
         const folder = folders.find(f => f.id === id);
         if (!folder) return;
         const newName = prompt('New folder name:', folder.name);
-        if (newName) folder.name = newName;
-        const newPin = prompt('New PIN (leave blank to remove):', folder.pin);
-        folder.pin = newPin || '';
-        saveAll(); renderAll();
-    }
-    
-    function deleteFolderItem(id) {
-        if (confirm('Move folder to recycle bin?')) {
-            const folder = folders.find(f => f.id === id);
-            if (folder) { recycleBin.push({ ...folder, isFolder: true }); folders = folders.filter(f => f.id !== id); saveAll(); renderAll(); }
-        }
+        if (newName) { folder.name = newName; saveAll(); renderAll(); }
     }
     
     function addFolder() {
         const name = prompt('Folder name:');
-        if (!name) return;
-        const pin = prompt('PIN (optional):');
-        folders.push({ id: Date.now(), name, pin: pin || '', x: 50 + folders.length * 100, y: 50, date: Date.now() });
+        if (name) folders.push({ id: Date.now(), name: name, items: [], x: 30 + folders.length * 20, y: 30 + folders.length * 20, dateAdded: Date.now() });
         saveAll(); renderAll();
     }
     
@@ -604,66 +550,121 @@
         saveAll(); renderAll();
     }
     
+    function showStickerSelector() {
+        document.getElementById('stickerSelectorModal').style.display = 'flex';
+        const emojiGrid = document.getElementById('emojiGrid');
+        emojiGrid.innerHTML = '';
+        const emojis = ['🌟', '🎵', '☕', '💭', '🌸', '🕯️', '📖', '🧸', '✨', '🌙', '❤️', '🎨', '📷', '🌿', '🍂', '⭐', '🌈', '🍀', '🐱', '🐶', '☀️', '❄️', '🍁', '🎈', '💖'];
+        emojis.forEach(emoji => {
+            const btn = document.createElement('button');
+            btn.textContent = emoji;
+            btn.style.fontSize = '32px';
+            btn.style.margin = '5px';
+            btn.style.cursor = 'pointer';
+            btn.onclick = () => {
+                stickers.push({ id: Date.now(), emoji: emoji, isImage: false, x: Math.random() * (window.innerWidth - 100), y: Math.random() * (window.innerHeight - 200) });
+                saveAll(); renderAll();
+                document.getElementById('stickerSelectorModal').style.display = 'none';
+            };
+            emojiGrid.appendChild(btn);
+        });
+    }
+    
+    function addImageSticker() {
+        const url = document.getElementById('stickerImageUrl').value.trim();
+        if (url) {
+            stickers.push({ id: Date.now(), emoji: url, isImage: true, x: Math.random() * (window.innerWidth - 100), y: Math.random() * (window.innerHeight - 200) });
+            saveAll(); renderAll();
+            document.getElementById('stickerSelectorModal').style.display = 'none';
+            document.getElementById('stickerImageUrl').value = '';
+        } else alert('Enter an image URL');
+    }
+    
     function showRecycleBin() {
         const win = document.getElementById('recycleWindow');
         const content = document.getElementById('recycleContent');
-        content.innerHTML = recycleBin.map(item => `<div style="padding:5px; border-bottom:1px solid #ccc;">${item.label || item.name} <button onclick="restoreItem(${item.id})">Restore</button></div>`).join('') || '<div>Empty</div>';
-        win.style.display = 'flex';
+        content.innerHTML = recycleBin.map(item => `<div style="padding:5px; border-bottom:1px solid #ccc;">${item.label || item.name} <button onclick="window.restoreFromBin(${item.id})">Restore</button></div>`).join('') || '<div>Empty</div>';
+        win.style.display = 'block';
     }
     
-    window.restoreItem = function(id) {
+    window.restoreFromBin = function(id) {
         const item = recycleBin.find(i => i.id === id);
         if (item) {
-            if (item.isFolder) folders.push({ ...item, id: Date.now() });
-            else icons.push({ ...item, id: Date.now(), folderId: null });
+            if (item.link !== undefined) icons.push({ ...item, id: Date.now() });
+            else if (item.name) folders.push({ ...item, id: Date.now() });
             recycleBin = recycleBin.filter(i => i.id !== id);
             saveAll(); renderAll(); showRecycleBin();
         }
     };
     
-    function emptyRecycleBin() { if (confirm('Permanently delete all?')) { recycleBin = []; saveAll(); renderAll(); showRecycleBin(); } }
+    function emptyRecycleBin() { if (confirm('Permanently delete all items?')) { recycleBin = []; saveAll(); renderAll(); showRecycleBin(); } }
     function changeWallpaper() { const url = document.getElementById('wallpaperUrl').value; if (url) { currentWallpaper = url; document.body.style.backgroundImage = `url(${url})`; document.body.style.backgroundSize = 'cover'; saveAll(); } }
     function resetWallpaper() { currentWallpaper = ''; document.body.style.backgroundImage = ''; document.body.style.background = '#008080'; saveAll(); }
-    function sortByName() { icons.sort((a,b) => a.label.localeCompare(b.label)); saveAll(); renderAll(); }
-    function legacyExport() { const data = { icons, folders, stickers, widgets, recycleBin, allNotes }; const blob = new Blob([JSON.stringify(data)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup-${new Date().toISOString().split('T')[0]}.json`; a.click(); }
-    function viewAllNotes() { const viewer = document.getElementById('notesViewer'); const list = document.getElementById('notesList'); list.innerHTML = allNotes.map(n => `<div class="note-item"><div class="note-date">${new Date(n.date).toLocaleString()}</div><div class="note-text">${escapeHtml(n.text)}</div></div>`).join('') || '<div>No notes yet</div>'; viewer.style.display = 'flex'; }
-    function showStickerSelector() { document.getElementById('stickerSelectorModal').style.display = 'flex'; const grid = document.getElementById('emojiGrid'); grid.innerHTML = ['🌟','🎵','☕','🌸','🕯️','🧸','✨','🌙','❤️','🎨','📷','🌿','🍂','⭐','🌈','🍀','☀️','❄️'].map(e => `<button style="font-size:32px; margin:5px; cursor:pointer;">${e}</button>`).join(''); grid.querySelectorAll('button').forEach(btn => btn.onclick = () => { stickers.push({ id: Date.now(), emoji: btn.textContent, isImage: false, x: Math.random() * (window.innerWidth-200), y: Math.random() * (window.innerHeight-200), w: 60 }); saveAll(); renderStickers(); document.getElementById('stickerSelectorModal').style.display = 'none'; }); }
-    function addImageSticker() { const url = document.getElementById('stickerImageUrl').value; if (url) { stickers.push({ id: Date.now(), emoji: url, isImage: true, x: Math.random() * (window.innerWidth-200), y: Math.random() * (window.innerHeight-200), w: 80 }); saveAll(); renderStickers(); document.getElementById('stickerSelectorModal').style.display = 'none'; } }
+    function applyTheme() { if (currentTheme === 'teal') document.body.style.background = '#008080'; else document.body.style.background = '#c0c0c0'; saveAll(); }
+    function sortByName() { icons.sort((a,b) => a.label.localeCompare(b.label)); folders.sort((a,b) => a.name.localeCompare(b.name)); saveAll(); renderAll(); }
+    function sortByDate() { icons.sort((a,b) => a.dateAdded - b.dateAdded); folders.sort((a,b) => a.dateAdded - b.dateAdded); saveAll(); renderAll(); }
+    function legacyExport() { const data = { icons, folders, stickers, widgets, recycleBin, currentWallpaper, currentTheme }; const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `retro-desktop-backup-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url); alert('Backup exported!'); }
+    function playStartupSound() { if (document.getElementById('startupSoundToggle')?.checked) { const audio = new Audio('https://www.soundjay.com/misc/sounds/windows-startup-1.mp3'); audio.volume = 0.3; audio.play().catch(e=>console.log('Sound blocked')); } }
+    function startBootScreen() { const boot = document.createElement('div'); boot.className = 'boot-screen'; boot.innerHTML = '<div>Starting Windows 95...<br><span style="font-size:12px">' + new Date().toDateString() + '</span></div>'; document.body.appendChild(boot); setTimeout(() => boot.remove(), 2500); }
+    let idleTimer, screensaverActive = false;
+    function startScreensaver() { if (screensaverActive) return; screensaverActive = true; document.getElementById('screensaver').classList.add('active'); }
+    function stopScreensaver() { document.getElementById('screensaver').classList.remove('active'); screensaverActive = false; resetIdleTimer(); }
+    function resetIdleTimer() { clearTimeout(idleTimer); idleTimer = setTimeout(() => { if (!screensaverActive) startScreensaver(); }, 5 * 60 * 1000); }
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+    function updateClock() { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' }); }
     
-    function playStartupSound() { if (document.getElementById('startupSoundToggle')?.checked) { const audio = new Audio('https://www.soundjay.com/misc/sounds/windows-startup-1.mp3'); audio.volume = 0.2; audio.play().catch(()=>console.log('click first')); } }
-    function startBoot() { const boot = document.createElement('div'); boot.className = 'boot-screen'; boot.innerHTML = 'Starting Windows 95...'; document.body.appendChild(boot); setTimeout(() => boot.remove(), 2000); }
-    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
-    function updateClock() { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); }
-    
-    // Event listeners
+    // Event Listeners
     document.getElementById('startButton').onclick = () => document.getElementById('startMenu').classList.toggle('show');
-    document.addEventListener('click', (e) => { if (!document.getElementById('startButton').contains(e.target)) document.getElementById('startMenu').classList.remove('show'); });
-    document.getElementById('addIconBtn').onclick = () => { document.getElementById('iconModal').style.display = 'flex'; document.getElementById('modalTitle').innerText = 'Add Icon'; document.getElementById('iconLabel').value = ''; document.getElementById('iconLink').value = ''; document.getElementById('iconImageUrl').value = ''; document.getElementById('iconPin').value = ''; };
-    document.getElementById('saveIconBtn').onclick = () => { const label = document.getElementById('iconLabel').value; if (!label) return; icons.push({ id: Date.now(), label, link: document.getElementById('iconLink').value || '#', image: document.getElementById('iconImageUrl').value || '📄', pin: document.getElementById('iconPin').value, x: 50, y: 50, date: Date.now(), folderId: null }); saveAll(); renderAll(); document.getElementById('iconModal').style.display = 'none'; };
+    document.addEventListener('click', (e) => { if (!document.getElementById('startButton').contains(e.target) && !document.getElementById('startMenu').contains(e.target)) document.getElementById('startMenu').classList.remove('show'); });
+    document.getElementById('addIconBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); window.editingIconId = null; document.getElementById('modalTitle').innerText = 'Add Icon'; document.getElementById('iconLabel').value = ''; document.getElementById('iconLink').value = ''; document.getElementById('iconImageUrl').value = ''; document.getElementById('iconPin').value = ''; document.getElementById('iconModal').style.display = 'flex'; };
+    document.getElementById('saveIconBtn').onclick = () => {
+        const label = document.getElementById('iconLabel').value.trim();
+        if (!label) return alert('Enter a name');
+        const link = document.getElementById('iconLink').value.trim();
+        let image = document.getElementById('iconImageUrl').value.trim() || '📄';
+        const pin = document.getElementById('iconPin').value.trim();
+        if (window.editingIconId) {
+            const idx = icons.findIndex(i => i.id === window.editingIconId);
+            if (idx !== -1) { icons[idx].label = label; icons[idx].link = link || '#'; icons[idx].image = image; icons[idx].pin = pin; }
+        } else {
+            icons.push({ id: Date.now(), label, link: link || '#', image, pin, x: 30 + icons.length * 20, y: 30 + icons.length * 20, dateAdded: Date.now() });
+        }
+        saveAll(); renderAll(); document.getElementById('iconModal').style.display = 'none';
+    };
     document.getElementById('addFolderBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); addFolder(); };
     document.getElementById('addWidgetBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); addWidget(); };
     document.getElementById('addStickerBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); showStickerSelector(); };
-    document.getElementById('viewAllNotesBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); viewAllNotes(); };
+    document.getElementById('stickerEmojiBtn').onclick = () => { document.getElementById('emojiGrid').style.display = 'flex'; document.getElementById('stickerImageUrl').style.display = 'none'; document.getElementById('addImageStickerBtn').style.display = 'none'; };
+    document.getElementById('stickerImageUrlBtn').onclick = () => { document.getElementById('emojiGrid').style.display = 'none'; document.getElementById('stickerImageUrl').style.display = 'block'; document.getElementById('addImageStickerBtn').style.display = 'block'; };
+    document.getElementById('addImageStickerBtn').onclick = addImageSticker;
     document.getElementById('changeWallpaperBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); document.getElementById('wallpaperModal').style.display = 'flex'; };
     document.getElementById('setWallpaperBtn').onclick = () => { changeWallpaper(); document.getElementById('wallpaperModal').style.display = 'none'; };
     document.getElementById('resetWallpaperBtn').onclick = () => { resetWallpaper(); document.getElementById('wallpaperModal').style.display = 'none'; };
+    document.getElementById('changeThemeBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); document.getElementById('themeModal').style.display = 'flex'; };
+    document.getElementById('applyThemeBtn').onclick = () => { currentTheme = document.getElementById('themeSelect').value; applyTheme(); saveAll(); document.getElementById('themeModal').style.display = 'none'; };
     document.getElementById('recycleBinBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); showRecycleBin(); };
     document.getElementById('sortByNameBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); sortByName(); };
+    document.getElementById('sortByDateBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); sortByDate(); };
     document.getElementById('legacyBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); legacyExport(); };
     document.getElementById('settingsBtn').onclick = () => { document.getElementById('startMenu').classList.remove('show'); document.getElementById('settingsModal').style.display = 'flex'; };
-    document.getElementById('addImageStickerBtn').onclick = addImageSticker;
     document.getElementById('closeModal').onclick = () => document.getElementById('iconModal').style.display = 'none';
     document.getElementById('closeWallpaperModal').onclick = () => document.getElementById('wallpaperModal').style.display = 'none';
+    document.getElementById('closeThemeModal').onclick = () => document.getElementById('themeModal').style.display = 'none';
     document.getElementById('closeSettingsModal').onclick = () => document.getElementById('settingsModal').style.display = 'none';
     document.getElementById('closeStickerSelectorModal').onclick = () => document.getElementById('stickerSelectorModal').style.display = 'none';
-    document.getElementById('closeNotesViewer').onclick = () => document.getElementById('notesViewer').style.display = 'none';
     document.getElementById('closeRecycleWindow').onclick = () => document.getElementById('recycleWindow').style.display = 'none';
     document.getElementById('emptyRecycleBtn').onclick = emptyRecycleBin;
+    document.getElementById('screensaver').onclick = stopScreensaver;
+    document.addEventListener('mousemove', resetIdleTimer);
+    document.addEventListener('keydown', resetIdleTimer);
+    document.addEventListener('click', resetIdleTimer);
     
+    // Initialize
     loadAll();
-    startBoot();
-    setTimeout(() => playStartupSound(), 1000);
+    startBootScreen();
+    setTimeout(() => playStartupSound(), 3000);
     setInterval(updateClock, 1000);
+    resetIdleTimer();
 </script>
 </body>
 </html>
